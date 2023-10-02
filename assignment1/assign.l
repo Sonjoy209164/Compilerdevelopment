@@ -10,18 +10,11 @@
 
 %option noyywrap
 
-%}
-header             "import"[ ]["tuli"]+[^\n]+[.h][ ]
-digit              [0-9]
-keywords           "IF"|"ELSE"|"WHILE"|"FOR"|"RETURN"|"CONTINUE"|"BREAK"
-identifier         [a-zA-Z_][a-zA-Z_0-9]*
-datatype           "INTEGER"|"DOUBLE"|"FLOAT"|"CHARACTER"|"STRING"|"BINARY"
-integer            [+-]?{digit}{1,5}
-number             ([+-]?[digit]+([\.][digit]+)?(e[+-]?[digit]+))
-main               "INT"[\t ]+"MAIN"[\t ]+"START"
-singlelinecomment  ("/")[^\n]*  
-math_op            "PLUS"|"MINUS"|"MULT"|"DIV"
-logical_op			"or"|"and"|"xor"     
+IDENTIFIER                [a-zA-Z_][_a-zA-Z0-9]*
+INTEGER                   [0-9]+
+DOUBLE                    [0-9]+[.][0-9]+
+STRING                    \"(\\.|[^"\\])*\"
+
 %%
 
 "import"[ ]+{IDENTIFIER}[.][h][ ]* {
@@ -48,12 +41,79 @@ logical_op			"or"|"and"|"xor"
     return SCOMMENT;
 }
 
+"/*"[ ]* {
+    char comment[1000];
+    int i = 0;
+    while(1) {
+        char c = input();
+        if(c == '*') {
+            char d = input();
+            if(d == '/') {
+                comment[i++] = '\0';
+                break;
+            }
+            comment[i++] = (c == '\n') ? ' ' : c;
+            comment[i++] = (d == '\n') ? ' ' : d;
+        } else {
+            if(comment[i - 1] == '*' && c == '/') {
+                comment[i - 1] = '\0';
+                break;
+            }
+            comment[i++] = (c == '\n') ? ' ' : c;
+        }
+    }
+    printf("MULTILINE COMMENT DETECTED! The Comment is: \n");
+    printf("%s\n", comment);
+    return MCOMMENT;
+}
 
 "number"[ ]+ {
     return NUMBER_TYPE;
 }
 
+"decimal"[ ]+ {
+    return DECIMAL_TYPE;
+}
+"string"[ ]+ {
+    return STRING_TYPE;
+}
 
+"input" {
+    return INPUT;
+}
+"print" {
+    return PRINT;
+}
+"if" {
+    return IF;
+}
+"elif" {
+    return ELIF;
+}
+"else" {
+    return ELSE;
+}
+"for" {
+    return FOR;
+}
+"in" {
+    return IN;
+}
+"while" {
+    return WHILE;
+}
+"def" {
+    return DEF;
+}
+"->" {
+    return ARROW;
+}
+"call" {
+    return CALL;
+}
+"++" {
+    return INC;
+}
 
 "--" {
     return DEC;

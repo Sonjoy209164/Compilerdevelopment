@@ -14,24 +14,43 @@ string x; // here x is for storing yytext
     int count_of_integers = 0;
     int count_of_preprocessors = 0;
 
-void print(string comment, string message) {
-		// cout << message << " is a " << comment << "\n";
-		cout << "input : " << message << "\n";
-		cout << "token : " << comment << "\n\n";
-	}
-
-
-
 %}
 
-identifier   		[a-zA-Z_][a-zA-Z_0-9]{0,31}
-integer             [0-9]+
 Preprocessor        (#include|#define|#undef|#if|#ifdef|#ifndef|#elif|#else|#endif|#line|#error|#pragma|#import)
+identifier   		[a-zA-Z_][a-zA-Z_0-9]{0,31}
+datatype   			("integer"|"number"|"character"|"string"|"binary")
+string     			[\"].*[\"]
+integer    			[\+\-]?[0-9]+
+number     			({integer}([\.]{integer})?(e[\+\-]?{integer})|{integer}([\.]{integer}))
+binary     			("false"|"true")
+character  			("'\\n'"|[\'][^\n][\'])
+eof        			([\n]|";")
+math_op    			(\+|\-|\*|\/|%)
+ass_op 				=
+ass_init            (\+=|\-=|\*=|\/=|%=|&=|\|=|\^=|<<=|>>=)
+com_op              ("is"|"is not"|<|>|<=|>=)
+logical_op			("or"|"and"|"xor")
+bitwise_op 			(&|\|\^|>>|<<)
+indec_op 			("++"|"--")
+comma				,
+skip	          	("continue")
+back              	("return")
+stop				("break")
+singleline			("//")[^\n]*
+multiline			("/\*").*?("\*/")
+iff            		("if")[ ]*[\(].*[\)][ ]*[\{].*[\}]
+elseif            	("else if")[ ]*[\(].*[\)][ ]*[\{].*[\}]
+else            	("else")[ ]*[\{].*[\}]
+if_condition		{iff}[ ]*{elseif}*?{else}?
 
+forloop   			("for")[ ]{identifier}[ ]("in")[ ]{identifier}[ ]*[\{].*[\}]
+whileloop			("while")[ ]*[\(].*[\)][ ]*[\{].*[\}]
+returntype			({datatype}|"void")
+routine				("function")[ ]{identifier}[ ]*[\(].*[\)][ ]*:[ ]*{returntype}[ ]*[\{].*[\}]
 
 %%
 {identifier}    	{x = yytext; print("identifier",  x); count_of_identifiers++;}
-{integer}           {x = yytext; print("integer", x); count_of_integers++;}
+
 {Preprocessor}      {x=yytext; print("Preprocessor",x); count_of_preprocessors++;}
 
 
@@ -75,7 +94,7 @@ int main()
 	cout << "Total identifiers found: " << count_of_identifiers << "\n";
 	cout << "Total keywords found   : " << count_of_keywords << "\n";
 	cout << "Total statements fountd: " << count_of_statements << "\n";
-    cout << "Total integer fountd: " << count_of_integers << "\n";
-    cout << "Total Preprocessors fountd: " << count_of_preprocessors << "\n";
+   
+    cout << "Total Preprocessors found: " << count_of_preprocessors << "\n";
 	return 0;
 }
