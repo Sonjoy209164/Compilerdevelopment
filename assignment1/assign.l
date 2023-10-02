@@ -1,230 +1,130 @@
 %{
-    #include <stdio.h>
-    #include <string.h>
-    #include "bison.tab.h"
+	// definition
+	#include <bits/stdc++.h>
+	using namespace std;
 
-    int variable_count = 0;
-    int line_count = 0;
-    char previous_code[1000];
+	string x; // here x is for storing yytext
+	int count_of_identifiers = 0;
+	int count_of_keywords = 0;
+	int count_of_statements = 0;
+    int inc =0;
+    int inf=0;
+
+	// a newline is an indicator of the end of statement
+	// but multiple statement can be written in a single line seperating them with a semicolon
+	
+	void print(string comment, string message) {
+		// cout << message << " is a " << comment << "\n";
+		cout << "input : " << message << "\n";
+		cout << "token : " << comment << "\n\n";
+	}
 %}
 
-%option noyywrap
+iff_condition		("if"|"else if"|"else")
+Preprocessor        (#include|#define|#undef|#if|#ifdef|#ifndef|#elif|#else|#endif|#line|#error|#pragma|#import)
+singleline			(>>)[^\n]*
+multiline			(>>>)(.|\n)*(<<<)
 
-IDENTIFIER                [a-zA-Z_][_a-zA-Z0-9]*
-INTEGER                   [0-9]+
-DOUBLE                    [0-9]+[.][0-9]+
-STRING                    \"(\\.|[^"\\])*\"
+identifier   		[a-zA-Z_][a-zA-Z_0-9]{0,31}
+datatype   			("int"|"real"|"char"|"string"|"bin")
+string     			[\"].*[\"]
+int    			    [\+\-]?[0-9]+
+real     			({int}([\.]{int})?(e[\+\-]?{int})|{int}([\.]{int}))
+bin     			("false"|"true")
+char  			    ("'\\n'"|[\'][^\n][\'])
+eof        			([\n]|";")
+algebric_op    		(\+|\-|\*|\/|%|\**)
+ass_op 				=
+ass_init            (\+=|\-=|\*=|\/=|%=|&=|\|=|\^=|<<=|>>=)
+com_op              ("is"|"is not"|<|>|<=|>=)
+logical_op			("or"|"and"|"xor")
+bitwise_op 			(&|\|\^|>>|<<)
+inc                (inc)[ ]
+dec                (dec)[ ]
+comma				,
+skip	          	("continue")
+back              	("return")
+stop				("break")
 
-%%
-
-"import"[ ]+{IDENTIFIER}[.][h][ ]* {
-    return HEADER;
-}
-
-";" {
-    return EOL;
-}
-
-"/>"[ ]* {
-    char comment[1000];
-    int i = 0;
-    while(1) {
-        char c = input();
-        if(c == '\n' || c == EOF) {
-            comment[i] = '\0';
-            break;
-        }
-        comment[i++] = c;
-    }
-    printf("SINGLELINE COMMENT DETECTED! The Comment is: \n");
-    printf("%s\n", comment);
-    return SCOMMENT;
-}
-
-"/*"[ ]* {
-    char comment[1000];
-    int i = 0;
-    while(1) {
-        char c = input();
-        if(c == '*') {
-            char d = input();
-            if(d == '/') {
-                comment[i++] = '\0';
-                break;
-            }
-            comment[i++] = (c == '\n') ? ' ' : c;
-            comment[i++] = (d == '\n') ? ' ' : d;
-        } else {
-            if(comment[i - 1] == '*' && c == '/') {
-                comment[i - 1] = '\0';
-                break;
-            }
-            comment[i++] = (c == '\n') ? ' ' : c;
-        }
-    }
-    printf("MULTILINE COMMENT DETECTED! The Comment is: \n");
-    printf("%s\n", comment);
-    return MCOMMENT;
-}
-
-"number"[ ]+ {
-    return NUMBER_TYPE;
-}
-
-"decimal"[ ]+ {
-    return DECIMAL_TYPE;
-}
-"string"[ ]+ {
-    return STRING_TYPE;
-}
-
-"input" {
-    return INPUT;
-}
-"print" {
-    return PRINT;
-}
-"if" {
-    return IF;
-}
-"elif" {
-    return ELIF;
-}
-"else" {
-    return ELSE;
-}
-"for" {
-    return FOR;
-}
-"in" {
-    return IN;
-}
-"while" {
-    return WHILE;
-}
-"def" {
-    return DEF;
-}
-"->" {
-    return ARROW;
-}
-"call" {
-    return CALL;
-}
-"++" {
-    return INC;
-}
-
-"--" {
-    return DEC;
-}
-"===" {
-    return EQL;
-}                                       
-"!!!" {
-    return NEQL;
-}
-"<" {
-    return LT;
-}
-">" {
-    return GT;
-}
-"<=" {
-    return LEQL;
-}
-">=" {
-    return GEQL;
-}
-"&&" {
-    return AND;
-}
-"||" {
-    return OR;
-}
-"^^" {
-    return XOR;
-}
-"~~" {
-    return NOT;
-}
-"**" {
-    return POW;
-}
-"sin" {
-    return SIN;
-}
-"cos" {
-    return COS;
-}
-"tan" {
-    return TAN;
-}
-"log10" {
-    return LOG10;
-}
-"log2" {
-    return LOG2;
-}
-"ln" {
-    return LN;
-}
-"sqrt" {
-    return SQRT;
-}
-
-{IDENTIFIER} {
-    yylval.string = strdup(yytext);
-
-    // Check if it's a variable declaration
-    if(strcmp(yytext, "int") == 0 || strcmp(yytext, "double") == 0 || strcmp(yytext, "float") == 0 || strcmp(yytext, "char") == 0) {
-        variable_count++;
-    }
-
-    return VARIABLE;
- }
-
-{INTEGER} {
-    yylval.integer = atoi(yytext);
-    return NUMBER_VALUE;
-}
-
-{DOUBLE} {
-    yylval.real = atof(yytext);
-    return DECIMAL_VALUE;
-}
-
-{STRING} {
-    char* tmp = strdup(yytext);
-    int n = strlen(tmp);
-    yylval.string = malloc(n * sizeof(char));
-    memcpy(yylval.string, &tmp[1], n  - 2);
-    yylval.string[n - 2]= '\0';
-    return STRING_VALUE;
-}
-
-[ \t\n] {
-    // Count lines
-    if(yytext[0] == '\n') {
-        line_count++;
-    }
-}
-
-[-+/*<>=,();%^{}\[\]] {
-    return yytext[0];
-}
-
-. {
-    printf("Unknown Character. %s\n", yytext);
-}
+for 				("for")[ ]{identifier}[ ]("in")[ ]{identifier}
+while_loop 			(while)[ ]
+returntype			({datatype}|"void")
+routine				("function")[ ]{identifier}[ ]*[\(].*[\)][ ]*:[ ]*{returntype}[ ]*[\{].*[\}]
 
 %%
 
-int yywrap() {
-    return 1;
+
+{singleline}		{x = yytext; print("singleline comment", x);}
+{multiline}			{x = yytext; print("multiline comment", x);}
+{bin}    		{x = yytext; print("bin",  x);}
+{skip}|{back}|{stop} {x = yytext; print("keyword", x); count_of_keywords++;}
+{eof}				{x = yytext; print("end of statement", x); count_of_statements++;}
+{logical_op}  		{x = yytext; print("logical_operator",  x);}
+{com_op}      		{x = yytext; print("comparison operator",  x);}
+{datatype}    		{x = yytext; print("datatype",  x); count_of_keywords++;}
+{iff_condition}	    {x = yytext;  print("if condition", x); inf++;}
+{identifier}    	{x = yytext; print("identifier",  x); count_of_identifiers++;}
+{string}      		{x = yytext; print("string",  x);}
+{int}     		    {x = yytext; print("int",  x);}
+{real}      		{x = yytext; print("real",  x);}
+{char}   		    {x = yytext; print("char",  x);}
+{algebric_op}     		{x = yytext; print("algebric_op",  x);}
+{ass_op}      		{x = yytext; print("assignment operator",  x);}
+{ass_init}    		{x = yytext; print("operation with assignment",  x);}
+{bitwise_op}  		{x = yytext; print("bitwise operator",  x);}
+{inc}    		   {x = yytext; print("indec_operator",  x); inc++;}
+{dec}    		   {x = yytext; print("indec_operator",  x); inc++;}
+{comma}       	   {x = yytext; print("comma operator",  x);}
+{while_loop}       {x = yytext; print("while loop", x); inf++;}
+
+{for}              {x = yytext; print("for loop", x);}
+
+
+{routine}			{x = yytext; print("subroutine", x);}
+.					{}
+[ ]
+
+%%
+
+int yywrap()
+{
+	return 1;
 }
 
-int yyerror(char *s){
-    fprintf(stderr,"error: %s\n", s);
-    return 1;
+void replaceNewlinesWithWhitespace(const std::string filename) {
+    std::ifstream inputFile(filename);
+    if (!inputFile) {
+        std::cerr << "Error: Unable to open input file." << std::endl;
+        return;
+    }
+    std::string content;
+    std::string line;
+    while (std::getline(inputFile, line)) {
+        content += line + " ";
+    }
+    inputFile.close();
+    std::ofstream outputFile("temp");
+    if (!outputFile) {
+        std::cerr << "Error: Unable to open output file." << std::endl;
+        return;
+    }
+    outputFile << content;
+    outputFile.close();
+}
+
+int main()
+{
+	// replaceNewlinesWithWhitespace("input.txt");
+	//yyin = freopen("temp", "r", stdin);
+	yyin = freopen("input.txt", "r", stdin);
+	//yyout = freopen("output.txt", "r", stdout);
+	cout << "Evaluation is running...\n";
+	yylex();
+
+	cout << "Total identifiers found: " << count_of_identifiers << "\n";
+	cout << "Total keywords found   : " << count_of_keywords << "\n";
+	cout << "Total statements fountd: " << count_of_statements << "\n";
+    cout << "Total if else  " << inf << "\n";
+
+	return 0;
 }
